@@ -15,12 +15,16 @@ from pyomo.core import Var, Constraint
 import time
 tStart = time.time()#計時開始
 #----------------------------#
-
+print '# ----------------------------------------------------------'
+print 'Input parameter to model......'
+print '# ----------------------------------------------------------'
 data = DataPortal(model=model)
 instance = model.create_instance(data)
-instance.dual = Suffix(direction=Suffix.IMPORT)
+# instance.dual = Suffix(direction=Suffix.IMPORT)
 #instance.pprint('T')
-
+print '# ----------------------------------------------------------'
+print 'Connect to GUROBI......'
+print '# ----------------------------------------------------------'
 # instance..pprint()
 opt = SolverFactory("gurobi")
 opt.options['nodemethod'] = 1  # (0=primal simplex, 1=dual simplex, 2=barrier)
@@ -38,10 +42,13 @@ opt.options['VarBranch'] = 2
 opt.options['CutPasses'] = 2  #  #Number of passes permitted when generating MIP cutting plane
 #----------------------------#
 '''
+print '# ----------------------------------------------------------'
+print 'Start calculating......'
+print '# ----------------------------------------------------------'
 '''
 #----------------------------#
 orig_stdout = sys.stdout # open
-sys.stdout=open("ucc_out(dual).txt","w")
+sys.stdout=open("ucc_out.txt","w")
 #----------------------------#
 '''
 results = opt.solve(instance, tee=True)
@@ -52,6 +59,9 @@ sys.stdout.close() # close
 sys.stdout=orig_stdout
 #----------------------------#
 '''
+print '# ----------------------------------------------------------'
+print 'Output data file......'
+print '# ----------------------------------------------------------'
 # 將所有輸出合成一個dict-----------------------------------#
 OBJ_value=instance.OBJ() # 目標函數值
 with open(OUTPUT_DIR + "min_cost.csv", "w") as text_file:
@@ -83,11 +93,49 @@ for i in dic2.keys():
 				df = pd.DataFrame(zip(*data)).set_index([0, 1])[2].unstack()
 				df.fillna(0, inplace=True) # missing data convert to zero
 				df.to_excel(OUTPUT_DIR + i + '_type_' + str(k) + '.xlsx') # 輸出 檔名_type_k.xlsx
+# 輸出 cp.xlsx檔案-----------------------------------------------------------------------------------#
+df1 = pd.DataFrame()
+for i in xrange(7):
+    if os.path.exists(OUTPUT_DIR + 'cp_type_'+ str(i) +'.xlsx'):
+        df = pd.read_excel(OUTPUT_DIR + 'cp_type_'+ str(i) +'.xlsx')
+        df1 = df1.add(df, fill_value=0)         # 將每個type的發電量加起來 就是總發電量
+df1.to_excel(OUTPUT_DIR + 'cp(123).xlsx')
+
+# 輸出 cu.xlsx檔案-----------------------------------------------------------------------------------#
+df_cu =pd.DataFrame()
+for i in xrange(7):
+    if os.path.exists(OUTPUT_DIR + 'cu_type_'+ str(i) +'.xlsx'):
+        df = pd.read_excel(OUTPUT_DIR + 'cu_type_'+ str(i) +'.xlsx')
+        for j in df.columns:
+            for k in df.index:              # 將啟動狀態1 換成對應的type
+                if df[j][k] == 1:
+                    df[j][k] = i
+        df_cu = df_cu.add(df, fill_value=0)
+df_cu.drop(0, axis=1, inplace=True) # 時間軸有0~24 0是初始值cu0 砍掉
+df_cu.to_excel(OUTPUT_DIR + 'cu.xlsx')
+
+# 輸出 dEOH.xlsx檔案---------------------------------------------------------------------------------#
+df_EOH = pd.DataFrame()
+for i in xrange(7):
+    if os.path.exists(OUTPUT_DIR + 'dEOH_type_'+ str(i) +'.xlsx'):
+        df = pd.read_excel(OUTPUT_DIR + 'dEOH_type_'+ str(i) +'.xlsx')
+        df_EOH = df_EOH.add(df, fill_value=0)
+df_EOH.to_excel(OUTPUT_DIR + 'EOH.xlsx')
+
+# 輸出 remainEOH.xlsx檔案----------------------------------------------------------------------------#
+df_rEOH = pd.DataFrame()
+for i in xrange(7):
+    if os.path.exists(OUTPUT_DIR + 'remainEOH_type_'+ str(i) +'.xlsx'):
+        df = pd.read_excel(OUTPUT_DIR + 'remainEOH_type_'+ str(i) +'.xlsx')
+        df_rEOH = df_rEOH.add(df, fill_value=0)
+df_rEOH.to_excel(OUTPUT_DIR + 'remainEOH.xlsx')
 # ---------------------------------------------------------------------------------------------------#
 
 #----------------------------#
 tEnd = time.time()#計時結束
-print 'Time cost:',tEnd - tStart,'sec'
+print '# ----------------------------------------------------------'
+print 'Total Time cost:',tEnd - tStart,'sec'
+print '# ----------------------------------------------------------'
 #----------------------------#
 
 

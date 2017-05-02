@@ -1,0 +1,18 @@
+cy
+0 1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 
+
+cyc0=0
+
+t=1
+cyc[i,1] = cyc0 + cy1 = 0
+
+t=2...24
+cyc[t] = cyc[t-1]+cy[t]
+
+cyc[i,2] = cyc[i,1] + cy[i,2] = 0 + 1 =1
+cyc[i,3] = cyc[i,2] + cy[i,3] = 1 + 0 =1
+.
+.
+.
+cyc[i,7] = cyc[i,6] + cy[i,7] = 1 + 0 =1
+cyc[i,8] = cyc[i,7] + cy[i,8] = 1 + 1 =2
